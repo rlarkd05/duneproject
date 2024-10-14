@@ -7,6 +7,8 @@
 
 void init(void);
 void intro(void);
+void Construction(void); 
+void Biome(void);
 void outro(void);
 void cursor_move(DIRECTION dir);
 void sample_obj_move(void);
@@ -32,7 +34,7 @@ OBJECT_SAMPLE obj = {
 	.pos = {1, 1},
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 2},
 	.repr = 'o',
-	.speed = 300,
+	.move_period = 300,
 	.next_move_time = 300
 };
 
@@ -40,8 +42,11 @@ OBJECT_SAMPLE obj = {
 int main(void) {
 	srand((unsigned int)time(NULL));
 
-	init();
 	intro();
+	init();
+	Construction();
+	Biome();
+
 	display(resource, map, cursor);
 
 	while (1) {
@@ -82,6 +87,59 @@ void intro(void) {
 void outro(void) {
 	printf("exiting...\n");
 	exit(0);
+}
+
+void Construction(void) {
+	//아군 베이스
+	map[0][15][1] = 'B';
+	map[0][16][1] = 'B';
+	map[0][15][2] = 'B';
+	map[0][16][2] = 'B';
+
+	//적 베이스
+	map[0][1][58] = 'B';
+	map[0][2][58] = 'B';
+	map[0][1][57] = 'B';
+	map[0][2][57] = 'B';
+
+	//아군 장판
+	map[0][15][3] = 'P';
+	map[0][15][4] = 'P';
+	map[0][16][3] = 'P';
+	map[0][16][4] = 'P';
+
+	//적 장판
+	map[0][1][56] = 'P';
+	map[0][1][55] = 'P';
+	map[0][2][56] = 'P';
+	map[0][2][55] = 'P';
+
+	//아군 가까운 스파이스
+	map[0][13][1] = '5';
+
+	//적 가까운 스파이스
+	map[0][4][58] = '5';
+
+}
+
+void Biome(void) {
+	// 바위
+	map[0][4][25] = 'R';
+	map[0][3][25] = 'R';
+	map[0][4][26] = 'R';
+	map[0][3][26] = 'R';
+
+	map[0][12][32] = 'R';
+	map[0][13][32] = 'R';
+	map[0][12][33] = 'R';
+	map[0][13][33] = 'R';
+
+	map[0][11][5] = 'R';
+	
+	map[0][6][48] = 'R';
+
+	map[0][13][50] = 'R';
+
 }
 
 void init(void) {
@@ -179,5 +237,5 @@ void sample_obj_move(void) {
 	obj.pos = sample_obj_next_position();
 	map[1][obj.pos.row][obj.pos.column] = obj.repr;
 
-	obj.next_move_time = sys_clock + obj.speed;
+	obj.next_move_time = sys_clock + obj.move_period;
 }
