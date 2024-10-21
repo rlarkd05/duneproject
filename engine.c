@@ -38,6 +38,93 @@ OBJECT_SAMPLE obj = {
 	.next_move_time = 300
 };
 
+OBJECT_BUILDING ally_base = {
+	.pos1 = {15, 1},
+	.pos2 = {15, 2},
+	.pos3 = {16, 1},
+	.pos4 = {16, 2},
+	.repr = 'B',
+	.layer = 0
+};
+
+OBJECT_BUILDING enemy_base = {
+	.pos1 = {1, 58},
+	.pos2 = {1, 57},
+	.pos3 = {2, 58},
+	.pos4 = {2, 57},
+	.repr = 'B',
+	.layer = 0
+};
+
+OBJECT_BUILDING ally_pad = {
+	.pos1 = {15, 3},
+	.pos2 = {15, 4},
+	.pos3 = {16, 3},
+	.pos4 = {16, 4},
+	.repr = 'P',
+	.layer = 0
+};
+
+OBJECT_BUILDING enemy_pad = {
+	.pos1 = {2, 55},
+	.pos2 = {2, 56},
+	.pos3 = {1, 55},
+	.pos4 = {1, 56},
+	.repr = 'P',  // E는 적군 장판을 나타내는 문자
+	.layer = 0
+};
+
+OBJECT_BUILDING ally_spice = {
+	.pos1 = {13, 1},  // 아군 스파이스 위치
+	.repr = '5',      // 스파이스를 나타내는 문자
+	.layer = 0        // 첫 번째 레이어
+};
+
+OBJECT_BUILDING enemy_spice = {
+	.pos1 = {4, 58},
+	.repr = '5', // 스파이스를 나타내는 문자
+	.layer = 0   // 첫 번째 레이어
+};
+
+// 바위 구조체 정의
+OBJECT_BUILDING ROCK_1 = {
+	.pos1 = {4, 25},
+	.pos2 = {3, 25},
+	.pos3 = {4, 26},
+	.pos4 = {3, 26},
+	.repr = 'R',
+	.layer = 0
+};
+
+OBJECT_BUILDING ROCK_2 = {
+	.pos1 = {12, 32},
+	.pos2 = {13, 32},
+	.pos3 = {12, 33},
+	.pos4 = {13, 33},
+	.repr = 'R',
+	.layer = 0
+};
+
+OBJECT_BUILDING ROCK_3 = {
+	.pos1 = {11, 5},  // 하나의 위치만 있는 바위도 구조체로 정의 가능
+	.repr = 'R',
+	.layer = 0
+};
+
+OBJECT_BUILDING ROCK_4 = {
+	.pos1 = {6, 48},
+	.repr = 'R',
+	.layer = 0
+};
+
+OBJECT_BUILDING ROCK_5 = {
+	.pos1 = {13, 50},
+	.repr = 'R',
+	.layer = 0
+};
+
+
+
 /* ================= main() =================== */
 int main(void) {
 	srand((unsigned int)time(NULL));
@@ -89,58 +176,66 @@ void outro(void) {
 	exit(0);
 }
 
+
 void Construction(void) {
-	//아군 베이스
-	map[0][15][1] = 'B';
-	map[0][16][1] = 'B';
-	map[0][15][2] = 'B';
-	map[0][16][2] = 'B';
+	// 아군 베이스
+	map[ally_base.layer][ally_base.pos1.row][ally_base.pos1.column] = ally_base.repr;
+	map[ally_base.layer][ally_base.pos2.row][ally_base.pos2.column] = ally_base.repr;
+	map[ally_base.layer][ally_base.pos3.row][ally_base.pos3.column] = ally_base.repr;
+	map[ally_base.layer][ally_base.pos4.row][ally_base.pos4.column] = ally_base.repr;
 
-	//적 베이스
-	map[0][1][58] = 'B';
-	map[0][2][58] = 'B';
-	map[0][1][57] = 'B';
-	map[0][2][57] = 'B';
+	// 적군 베이스
+	map[enemy_base.layer][enemy_base.pos1.row][enemy_base.pos1.column] = enemy_base.repr;
+	map[enemy_base.layer][enemy_base.pos2.row][enemy_base.pos2.column] = enemy_base.repr;
+	map[enemy_base.layer][enemy_base.pos3.row][enemy_base.pos3.column] = enemy_base.repr;
+	map[enemy_base.layer][enemy_base.pos4.row][enemy_base.pos4.column] = enemy_base.repr;
 
-	//아군 장판
-	map[0][15][3] = 'P';
-	map[0][15][4] = 'P';
-	map[0][16][3] = 'P';
-	map[0][16][4] = 'P';
+	// 아군 장판
+	map[ally_pad.layer][ally_pad.pos1.row][ally_pad.pos1.column] = ally_pad.repr;
+	map[ally_pad.layer][ally_pad.pos2.row][ally_pad.pos2.column] = ally_pad.repr;
+	map[ally_pad.layer][ally_pad.pos3.row][ally_pad.pos3.column] = ally_pad.repr;
+	map[ally_pad.layer][ally_pad.pos4.row][ally_pad.pos4.column] = ally_pad.repr;
 
-	//적 장판
-	map[0][1][56] = 'P';
-	map[0][1][55] = 'P';
-	map[0][2][56] = 'P';
-	map[0][2][55] = 'P';
+	//적군 장판
+	map[enemy_pad.layer][enemy_pad.pos1.row][enemy_pad.pos1.column] = enemy_pad.repr;
+	map[enemy_pad.layer][enemy_pad.pos2.row][enemy_pad.pos2.column] = enemy_pad.repr;
+	map[enemy_pad.layer][enemy_pad.pos3.row][enemy_pad.pos3.column] = enemy_pad.repr;
+	map[enemy_pad.layer][enemy_pad.pos4.row][enemy_pad.pos4.column] = enemy_pad.repr;
 
-	//아군 가까운 스파이스
-	map[0][13][1] = '5';
+	//아군 스파이스
+	map[ally_spice.layer][ally_spice.pos1.row][ally_spice.pos1.column] = ally_spice.repr;
 
-	//적 가까운 스파이스
-	map[0][4][58] = '5';
+	//적군 스파이스
+	map[enemy_spice.layer][enemy_spice.pos1.row][enemy_spice.pos1.column] = enemy_spice.repr;
 
+
+	// 적 장판이나 추가 오브젝트도 동일한 방식으로 추가 가능
 }
 
 void Biome(void) {
-	// 바위
-	map[0][4][25] = 'R';
-	map[0][3][25] = 'R';
-	map[0][4][26] = 'R';
-	map[0][3][26] = 'R';
+	// 바위 1 추가
+	map[ROCK_1.layer][ROCK_1.pos1.row][ROCK_1.pos1.column] = ROCK_1.repr;
+	map[ROCK_1.layer][ROCK_1.pos2.row][ROCK_1.pos2.column] = ROCK_1.repr;
+	map[ROCK_1.layer][ROCK_1.pos3.row][ROCK_1.pos3.column] = ROCK_1.repr;
+	map[ROCK_1.layer][ROCK_1.pos4.row][ROCK_1.pos4.column] = ROCK_1.repr;
 
-	map[0][12][32] = 'R';
-	map[0][13][32] = 'R';
-	map[0][12][33] = 'R';
-	map[0][13][33] = 'R';
+	// 바위 2 추가
+	map[ROCK_2.layer][ROCK_2.pos1.row][ROCK_2.pos1.column] = ROCK_2.repr;
+	map[ROCK_2.layer][ROCK_2.pos2.row][ROCK_2.pos2.column] = ROCK_2.repr;
+	map[ROCK_2.layer][ROCK_2.pos3.row][ROCK_2.pos3.column] = ROCK_2.repr;
+	map[ROCK_2.layer][ROCK_2.pos4.row][ROCK_2.pos4.column] = ROCK_2.repr;
 
-	map[0][11][5] = 'R';
-	
-	map[0][6][48] = 'R';
+	// 바위 3 추가
+	map[ROCK_3.layer][ROCK_3.pos1.row][ROCK_3.pos1.column] = ROCK_3.repr;
 
-	map[0][13][50] = 'R';
+	// 바위 4 추가
+	map[ROCK_4.layer][ROCK_4.pos1.row][ROCK_4.pos1.column] = ROCK_4.repr;
 
+	// 바위 5 추가
+	map[ROCK_5.layer][ROCK_5.pos1.row][ROCK_5.pos1.column] = ROCK_5.repr;
 }
+
+
 
 void init(void) {
 	// layer 0(map[0])에 지형 생성

@@ -15,8 +15,7 @@
 #define COLOR_CURSOR	112
 #define COLOR_RESOURCE  112
 
-#define COLOR_BLUE_BACKGROUND 16  // 파란색 배경 (보통은 값 16)
- //파란색
+#define COLOR_BLUE	1 //파란색
 
 
 

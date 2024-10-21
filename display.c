@@ -63,12 +63,12 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 
 	for (int i = 0; i < MAP_HEIGHT; i++) {
 		for (int j = 0; j < MAP_WIDTH; j++) {
-			if (frontbuf[i][j] != backbuf[i][j]) {s
+			if (frontbuf[i][j] != backbuf[i][j]) {
 				POSITION pos = { i, j };
 
 				// 특정 문자인 B를 만나면 파란색으로 출력
 				if (backbuf[i][j] == 'B') {
-					printc(padd(map_pos, pos), backbuf[i][j], COLOR_BLUE_BACKGROUND);  // 파란색으로 출력
+					printc(padd(map_pos, pos), backbuf[i][j], COLOR_BLUE);  // 파란색으로 출력
 				}
 				else {
 					printc(padd(map_pos, pos), backbuf[i][j], COLOR_DEFAULT);  // 기본 색상으로 출력

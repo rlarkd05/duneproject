@@ -36,6 +36,15 @@ typedef enum {
 	k_undef, // 정의되지 않은 키 입력	
 } KEY;
 
+/* ================= 구조체 정의 =================== */
+typedef struct {
+	POSITION pos1; // 건물 크기 1
+	POSITION pos2; // 건물 크기 2
+	POSITION pos3; // 건물 크기 3
+	POSITION pos4; // 건물 크기 4
+	char repr;     // 건물 이름
+	int layer;     // 몇번 째 레이어에 들어가는건지 구분 <-- 필요하면 사용
+} OBJECT_BUILDING;
 
 // DIRECTION은 KEY의 부분집합이지만, 의미를 명확하게 하기 위해서 다른 타입으로 정의
 typedef enum {
