@@ -25,17 +25,24 @@ typedef struct {
 typedef struct {
 	POSITION previous;  // 직전 위치
 	POSITION current;   // 현재 위치
+	int move_count;     // 빠른 이동(한번에 여러 칸)을 위한 변수
+	int last_move_time; // 마지막으로 이동한 시간
 } CURSOR;
 
 // 입력 가능한 키 종류.
 // 수업에서 enum은 생략했는데, 크게 어렵지 않으니 예제 검색
 typedef enum {
-	// k_none: 입력된 키가 없음. d_stay(안 움직이는 경우)에 대응
-	k_none = 0, k_up, k_right, k_left, k_down,
-	k_quit,
-	k_undef, // 정의되지 않은 키 입력	
+	k_up,       // 위 방향키
+	k_down,     // 아래 방향키
+	k_left,     // 왼쪽 방향키
+	k_right,    // 오른쪽 방향키
+	k_select,   // 스페이스바
+	k_cancel,   // ESC 키
+	k_quit,     // 종료 키 (q)
+	k_unknown,  // 알 수 없는 키
+	k_none,     // 입력 없음
+	k_undef     // 정의되지 않은 키
 } KEY;
-
 /* ================= 구조체 정의 =================== */
 typedef struct {
 	POSITION pos1; // 건물 크기 1
@@ -50,6 +57,12 @@ typedef struct {
 typedef enum {
 	d_stay = 0, d_up, d_right, d_left, d_down
 } DIRECTION;
+
+// 오브젝트 상태 및 선택 처리
+typedef struct {
+	OBJECT_BUILDING* selected_object;  // 현재 선택된 오브젝트 (없으면 NULL)
+	bool is_selected;  // 오브젝트 선택 여부
+} SELECTION;
 
 
 /* ================= 위치와 방향(2) =================== */
@@ -95,9 +108,9 @@ typedef struct {
 typedef struct {
 	POSITION pos;		// 현재 위치(position)
 	POSITION dest;		// 목적지(destination)
-	char repr;			// 화면에 표시할 문자(representation)
+	char repr;			// 화면에 표시할 s문자(representation)
 	int move_period;	// '몇 ms마다 한 칸 움직이는지'를 뜻함
 	int next_move_time;	// 다음에 움직일 시간
-} OBJECT_SAMPLE;
+} OBJECT_WORM;
 
 #endif

@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
@@ -11,6 +12,10 @@ void Construction(void);
 void Biome(void);
 void outro(void);
 void cursor_move(DIRECTION dir);
+void double_click_cursor_move(DIRECTION dir);
+void handle_input(KEY key, CURSOR* cursor, SELECTION* selection);
+void display_status(const CURSOR* cursor, const SELECTION* selection);
+void clear_status(void);
 void sample_obj_move(void);
 POSITION sample_obj_next_position(void);
 
@@ -18,6 +23,7 @@ POSITION sample_obj_next_position(void);
 /* ================= control =================== */
 int sys_clock = 0;		// system-wide clock(ms)
 CURSOR cursor = { { 1, 1 }, {1, 1} };
+SELECTION selection;
 
 
 /* ================= game data =================== */
@@ -30,10 +36,10 @@ RESOURCE resource = {
 	.population_max = 0
 };
 
-OBJECT_SAMPLE obj = {
-	.pos = {1, 1},
+OBJECT_WORM obj = {
+	.pos = {3, 5},
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 2},
-	.repr = 'o',
+	.repr = 'W',
 	.move_period = 300,
 	.next_move_time = 300
 };
@@ -123,6 +129,14 @@ OBJECT_BUILDING ROCK_5 = {
 	.layer = 0
 };
 
+typedef struct {
+	OBJECT_BUILDING allay_base;       // 본진
+	OBJECT_BUILDING enemy_base; //적진
+	OBJECT_BUILDING allay_plate;
+	OBJECT_BUILDING enemy_plate;      // 장판
+	OBJECT_BUILDING dormitory;  // 숙소
+	OBJECT_BUILDING garage;     // 창고
+} COMMON_BUILDINGS;
 
 
 /* ================= main() =================== */
@@ -137,32 +151,33 @@ int main(void) {
 	display(resource, map, cursor);
 
 	while (1) {
-		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
 		KEY key = get_key();
 
-		// 키 입력이 있으면 처리
 		if (is_arrow_key(key)) {
-			cursor_move(ktod(key));
+			// 방향키 더블클릭 체크 후 커서 이동
+			static int last_key = -1;
+			static int last_time = 0;
+
+			if (key == last_key && sys_clock - last_time < 200) {
+				double_click_cursor_move(ktod(key));
+			}
+			else {
+				cursor_move(ktod(key));
+			}
+			last_key = key;
+			last_time = sys_clock;
 		}
 		else {
-			// 방향키 외의 입력
-			switch (key) {
-			case k_quit: outro();
-			case k_none:
-			case k_undef:
-			default: break;
-			}
+			handle_input(key, &cursor, &selection);
 		}
 
-		// 샘플 오브젝트 동작
 		sample_obj_move();
-
-		// 화면 출력
 		display(resource, map, cursor);
 		Sleep(TICK);
 		sys_clock += 10;
 	}
 }
+
 
 /* ================= subfunctions =================== */
 void intro(void) {
@@ -176,6 +191,11 @@ void outro(void) {
 	exit(0);
 }
 
+void double_click_cursor_move(DIRECTION dir) {
+	for (int i = 0; i < 3; i++) {
+		cursor_move(dir);
+	}
+}
 
 void Construction(void) {
 	// 아군 베이스
@@ -264,17 +284,112 @@ void init(void) {
 }
 
 // (가능하다면) 지정한 방향으로 커서 이동
-void cursor_move(DIRECTION dir) {
-	POSITION curr = cursor.current;
-	POSITION new_pos = pmove(curr, dir);
+void cursor_move(DIRECTION direction) {
+	// 커서의 현재 위치를 기반으로 방향에 따라 이동
+	POSITION new_position = pmove(cursor.current, direction);
 
-	// validation check
-	if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 && \
-		1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
-
-		cursor.previous = cursor.current;
-		cursor.current = new_pos;
+	// 이동할 위치가 맵의 범위 내에 있는지 확인
+	if (new_position.row >= 0 && new_position.row < MAP_HEIGHT &&
+		new_position.column >= 0 && new_position.column < MAP_WIDTH) {
+		cursor.previous = cursor.current; // 이전 위치 업데이트
+		cursor.current = new_position; // 새로운 위치로 업데이트
 	}
+}
+
+
+
+void handle_input(KEY key, CURSOR* cursor, SELECTION* selection) {
+	int layer = 0; // 현재 레이어는 0으로 설정
+	int row = cursor->current.row;
+	int col = cursor->current.column;
+
+	if (layer < 0 || layer >= N_LAYER || row < 0 || row >= MAP_HEIGHT || col < 0 || col >= MAP_WIDTH) {
+		return;
+	}
+
+	switch (key) {
+	case k_up:
+		cursor_move(d_up);
+		break;
+	case k_down:
+		cursor_move(d_down);
+		break;
+	case k_left:
+		cursor_move(d_left);
+		break;
+	case k_right:
+		cursor_move(d_right);
+		break;
+
+	case k_select:
+		// 선택된 오브젝트 처리
+		if (map[layer][row][col] != ' ' && map[layer][row][col] != -1) {
+			if (selection->selected_object != NULL) {
+				free(selection->selected_object);
+			}
+
+			OBJECT_BUILDING* obj = malloc(sizeof(OBJECT_BUILDING));
+			if (obj != NULL) {
+				obj->repr = map[layer][row][col];
+				obj->pos1 = cursor->current;
+
+				selection->selected_object = obj;
+				selection->is_selected = true;
+			}
+		}
+		else {
+			if (selection->selected_object != NULL) {
+				free(selection->selected_object);
+			}
+			selection->selected_object = NULL;
+			selection->is_selected = false;
+		}
+
+		display_status(cursor, selection);
+		break;
+
+	case k_cancel:
+		if (selection->selected_object != NULL) {
+			free(selection->selected_object);
+			selection->selected_object = NULL;
+		}
+		selection->is_selected = false;
+		clear_status();
+		break;
+
+	default:
+		break;
+	}
+
+	display_status(cursor, selection);
+}
+
+
+void set_cursor_position(int x, int y) {
+	COORD coord = { x, y };
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+void display_status(const CURSOR* cursor, const SELECTION* selection) {
+	// 오른쪽 상단 위치(가령 x=70, y=0)를 설정
+	set_cursor_position(70, 0);
+
+	if (selection->is_selected) {
+		if (selection->selected_object) {
+			printf("Selected Object: %c   ", selection->selected_object->repr);
+		}
+		else {
+			printf("Selected Terrain: Desert    ");
+		}
+	}
+	else {
+		printf("No Object Selected          ");
+	}
+}
+
+/* 상태창 초기화 */
+void clear_status(void) {
+	printf("Status Cleared\n");
 }
 
 /* ================= sample object movement =================== */
@@ -323,11 +438,11 @@ POSITION sample_obj_next_position(void) {
 
 void sample_obj_move(void) {
 	if (sys_clock <= obj.next_move_time) {
-		// 아직 시간이 안 됐음
+		// 아직 시간이 안 됐음w
 		return;
 	}
 
-	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장
+	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장ddd
 	map[1][obj.pos.row][obj.pos.column] = -1;
 	obj.pos = sample_obj_next_position();
 	map[1][obj.pos.row][obj.pos.column] = obj.repr;

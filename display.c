@@ -58,26 +58,52 @@ void project(char src[N_LAYER][MAP_HEIGHT][MAP_WIDTH], char dest[MAP_HEIGHT][MAP
 	}
 }
 
+
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
-	project(map, backbuf);
+    project(map, backbuf);
 
-	for (int i = 0; i < MAP_HEIGHT; i++) {
-		for (int j = 0; j < MAP_WIDTH; j++) {
-			if (frontbuf[i][j] != backbuf[i][j]) {
-				POSITION pos = { i, j };
+    // 화면 배경색을 흰색으로 설정
 
-				// 특정 문자인 B를 만나면 파란색으로 출력
-				if (backbuf[i][j] == 'B') {
-					printc(padd(map_pos, pos), backbuf[i][j], COLOR_BLUE);  // 파란색으로 출력
-				}
-				else {
-					printc(padd(map_pos, pos), backbuf[i][j], COLOR_DEFAULT);  // 기본 색상으로 출력
-				}
-			}
-			frontbuf[i][j] = backbuf[i][j];
-		}
-	}
+    for (int i = 0; i < MAP_HEIGHT; i++) {
+        for (int j = 0; j < MAP_WIDTH; j++) {
+            if (frontbuf[i][j] != backbuf[i][j]) {
+                POSITION pos = { i, j };
+                char current_char = backbuf[i][j];
+                int color = COLOR_DEFAULT;  // 기본 색상
+
+                // 특정 문자에 따른 색상 변경
+                if (current_char == 'B') {
+                    // 아군과 적군 베이스 색상 설정
+                    if (i >= 15 && j <= 2) { // 아군 베이스
+                        color = COLOR_BLUE;  // 파란색
+                    }
+                    else if (i <= 2 && j >= 57) { // 적군 베이스
+                        color = COLOR_RED;   // 빨간색
+                    }
+                }
+                else if (current_char == '5') {
+                    color = COLOR_ORANGE; // 스파이스 색상
+                }
+                else if (current_char == 'P') {
+                    color = COLOR_GRAY;   // 장판 색상
+                }
+                else if (current_char == 'R') {
+                    color = COLOR_ROCK;    // 바위 색상
+                }
+
+                // 선택한 색상으로 출력
+                printc(padd(map_pos, pos), current_char, color);
+            }
+
+            // frontbuf 업데이트
+            frontbuf[i][j] = backbuf[i][j];
+        }
+    }
+
+    printf("\033[0m"); // 색상 리셋
 }
+
+
 
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력

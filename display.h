@@ -16,7 +16,10 @@
 #define COLOR_RESOURCE  112
 
 #define COLOR_BLUE	1 //파란색
-
+#define COLOR_RED	4 //빨간색
+#define COLOR_GRAY	8
+#define COLOR_ORANGE	12
+#define COLOR_ROCK	14
 
 
 // 지금은 자원, 맵, 커서만 표시
