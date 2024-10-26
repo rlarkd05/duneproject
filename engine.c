@@ -18,7 +18,8 @@ POSITION sample_obj_next_position(void);
 /* ================= control =================== */
 int sys_clock = 0;		// system-wide clock(ms)
 CURSOR cursor = { { 1, 1 }, {1, 1} };
-
+int last_key_time = 0;    // 마지막 키 입력 시간
+#define DOUBLE_PRESS_INTERVAL 200  // 연속 입력 시간 간격(ms)
 
 /* ================= game data =================== */
 char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -268,13 +269,25 @@ void cursor_move(DIRECTION dir) {
 	POSITION curr = cursor.current;
 	POSITION new_pos = pmove(curr, dir);
 
-	// validation check
-	if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 && \
-		1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
+	// 현재 시간에서 연속 입력 여부를 확인
+	int time_diff = sys_clock - last_key_time;
+	int move_distance = (time_diff < DOUBLE_PRESS_INTERVAL) ? 3 : 1; // 연속 입력 시 2칸 이동
 
-		cursor.previous = cursor.current;
-		cursor.current = new_pos;
+	for (int i = 0; i < move_distance; i++) {
+		// validation check (맵의 유효한 영역 내에서만 이동)
+		if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 &&
+			1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
+
+			cursor.previous = cursor.current;
+			cursor.current = new_pos;
+			new_pos = pmove(new_pos, dir); // 다음 이동을 위한 위치 갱신
+		}
+		else {
+			break; // 맵 경계를 넘어가면 반복 종료
+		}
 	}
+	// 마지막 입력 시간을 현재 시간으로 업데이트
+	last_key_time = sys_clock;
 }
 
 /* ================= sample object movement =================== */

@@ -15,9 +15,11 @@
 #define COLOR_CURSOR	112
 #define COLOR_RESOURCE  112
 
-#define COLOR_BLUE	1 //파란색
-
-
+#define COLOR_BLUE     1   // 파란색s
+#define COLOR_RED      4   // 빨간색
+#define COLOR_ORANGE   12   // 주황색
+#define COLOR_BLACK    8   // 검은색
+#define COLOR_GRAY     6   // 회색
 
 // 지금은 자원, 맵, 커서만 표시
 // 앞으로 화면에 표시할 내용들 여기에 추가하기
