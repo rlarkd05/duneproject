@@ -32,17 +32,12 @@ typedef struct {
 // 입력 가능한 키 종류.
 // 수업에서 enum은 생략했는데, 크게 어렵지 않으니 예제 검색
 typedef enum {
-	k_up,       // 위 방향키
-	k_down,     // 아래 방향키
-	k_left,     // 왼쪽 방향키
-	k_right,    // 오른쪽 방향키
-	k_select,   // 스페이스바
-	k_cancel,   // ESC 키
-	k_quit,     // 종료 키 (q)
-	k_unknown,  // 알 수 없는 키
-	k_none,     // 입력 없음
-	k_undef     // 정의되지 않은 키
+	// k_none: 입력된 키가 없음. d_stay(안 움직이는 경우)에 대응
+	k_none = 0, k_up, k_right, k_left, k_down,
+	k_quit,
+	k_undef, // 정의되지 않은 키 입력	
 } KEY;
+
 /* ================= 구조체 정의 =================== */
 typedef struct {
 	POSITION pos1; // 건물 크기 1
@@ -79,6 +74,8 @@ inline POSITION psub(POSITION p1, POSITION p2) {
 	POSITION p = { p1.row - p2.row, p1.column - p2.column };
 	return p;
 }
+
+#define DOUBLE_PRESS_TIME 200 // 두 번 누르는 간격 (ms)
 
 // 방향키인지 확인하는 함수
 #define is_arrow_key(k)		(k_up <= (k) && (k) <= k_down)

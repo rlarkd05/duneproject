@@ -11,11 +11,11 @@ void intro(void);
 void Construction(void); 
 void Biome(void);
 void outro(void);
-void cursor_move(DIRECTION dir);
-void double_click_cursor_move(DIRECTION dir);
-void handle_input(KEY key, CURSOR* cursor, SELECTION* selection);
-void display_status(const CURSOR* cursor, const SELECTION* selection);
-void clear_status(void);
+void cursor_move(DIRECTION direction);
+//void double_click_cursor_move(DIRECTION dir);
+//void handle_input(KEY key, CURSOR* cursor, SELECTION* selection);
+//void display_status(const CURSOR* cursor, const SELECTION* selection);
+//void clear_status(void);
 void sample_obj_move(void);
 POSITION sample_obj_next_position(void);
 
@@ -143,41 +143,39 @@ typedef struct {
 int main(void) {
 	srand((unsigned int)time(NULL));
 
-	intro();
 	init();
-	Construction();
-	Biome();
-
+	intro();
 	display(resource, map, cursor);
+	Biome();
+	Construction();
 
 	while (1) {
+		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
 		KEY key = get_key();
 
+		// 키 입력이 있으면 처리
 		if (is_arrow_key(key)) {
-			// 방향키 더블클릭 체크 후 커서 이동
-			static int last_key = -1;
-			static int last_time = 0;
-
-			if (key == last_key && sys_clock - last_time < 200) {
-				double_click_cursor_move(ktod(key));
-			}
-			else {
-				cursor_move(ktod(key));
-			}
-			last_key = key;
-			last_time = sys_clock;
+			cursor_move(&cursor, ktod(key));  // 수정된 부분
 		}
 		else {
-			handle_input(key, &cursor, &selection);
+			// 방향키 외의 입력
+			switch (key) {
+			case k_quit: outro();
+			case k_none:
+			case k_undef:
+			default: break;
+			}
 		}
 
+		// 샘플 오브젝트 동작
 		sample_obj_move();
+
+		// 화면 출력
 		display(resource, map, cursor);
 		Sleep(TICK);
 		sys_clock += 10;
 	}
 }
-
 
 /* ================= subfunctions =================== */
 void intro(void) {
@@ -191,11 +189,12 @@ void outro(void) {
 	exit(0);
 }
 
-void double_click_cursor_move(DIRECTION dir) {
-	for (int i = 0; i < 3; i++) {
-		cursor_move(dir);
-	}
-}
+
+//void double_click_cursor_move(DIRECTION dir) {
+//	for (int i = 0; i < 3; i++) {
+//		cursor_move(dir);
+//	}
+//}
 
 void Construction(void) {
 	// 아군 베이스
@@ -284,113 +283,123 @@ void init(void) {
 }
 
 // (가능하다면) 지정한 방향으로 커서 이동
-void cursor_move(DIRECTION direction) {
-	// 커서의 현재 위치를 기반으로 방향에 따라 이동
-	POSITION new_position = pmove(cursor.current, direction);
+void cursor_move(CURSOR* cursor, DIRECTION dir) {
+	POSITION curr = cursor->current;
+	POSITION new_pos = pmove(curr, dir);
 
-	// 이동할 위치가 맵의 범위 내에 있는지 확인
-	if (new_position.row >= 0 && new_position.row < MAP_HEIGHT &&
-		new_position.column >= 0 && new_position.column < MAP_WIDTH) {
-		cursor.previous = cursor.current; // 이전 위치 업데이트
-		cursor.current = new_position; // 새로운 위치로 업데이트
+	// validation check
+	if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 && \
+		1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
+
+		cursor->previous = cursor->current;
+		cursor->current = new_pos;
 	}
 }
 
 
+//void handle_input(KEY key, CURSOR* cursor, SELECTION* selection) {
+//	static KEY last_key = -1;
+//	static clock_t last_time = 0;
+//	clock_t current_time = clock();
+//
+//	DIRECTION direction;
+//	bool is_direction_key = true;
+//	switch (key) {
+//	case k_up: direction = d_up; break;
+//	case k_down: direction = d_down; break;
+//	case k_left: direction = d_left; break;
+//	case k_right: direction = d_right; break;
+//	default: is_direction_key = false; break;
+//	}
+//
+//	if (is_direction_key) {
+//		if (key == last_key && (current_time - last_time) < CLOCKS_PER_SEC / 2) {
+//			double_click_cursor_move(direction, cursor);
+//		}
+//		else {
+//			cursor_move(direction, cursor);
+//		}
+//		last_key = key;
+//		last_time = current_time;
+//	}
+//	else {
+//		switch (key) {
+//		case k_select:
+//			if (map[0][cursor->current.row][cursor->current.column] != ' ' &&
+//				map[0][cursor->current.row][cursor->current.column] != -1) {
+//				if (selection->selected_object != NULL) {
+//					free(selection->selected_object);
+//				}
+//				OBJECT_BUILDING* obj = malloc(sizeof(OBJECT_BUILDING));
+//				if (obj != NULL) {
+//					obj->repr = map[0][cursor->current.row][cursor->current.column];
+//					obj->pos1 = cursor->current;
+//					selection->selected_object = obj;
+//					selection->is_selected = true;
+//				}
+//			}
+//			else {
+//				if (selection->selected_object != NULL) {
+//					free(selection->selected_object);
+//				}
+//				selection->selected_object = NULL;
+//				selection->is_selected = false;
+//			}
+//			break;
+//		case k_cancel:
+//			if (selection->selected_object != NULL) {
+//				free(selection->selected_object);
+//				selection->selected_object = NULL;
+//			}
+//			selection->is_selected = false;
+//			break;
+//		default:
+//			break;
+//		}
+//	}
+//}
 
-void handle_input(KEY key, CURSOR* cursor, SELECTION* selection) {
-	int layer = 0; // 현재 레이어는 0으로 설정
-	int row = cursor->current.row;
-	int col = cursor->current.column;
+//void set_cursor_position(int x, int y) {
+//	COORD coord = { x, y };
+//	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+//}
 
-	if (layer < 0 || layer >= N_LAYER || row < 0 || row >= MAP_HEIGHT || col < 0 || col >= MAP_WIDTH) {
-		return;
-	}
-
-	switch (key) {
-	case k_up:
-		cursor_move(d_up);
-		break;
-	case k_down:
-		cursor_move(d_down);
-		break;
-	case k_left:
-		cursor_move(d_left);
-		break;
-	case k_right:
-		cursor_move(d_right);
-		break;
-
-	case k_select:
-		// 선택된 오브젝트 처리
-		if (map[layer][row][col] != ' ' && map[layer][row][col] != -1) {
-			if (selection->selected_object != NULL) {
-				free(selection->selected_object);
-			}
-
-			OBJECT_BUILDING* obj = malloc(sizeof(OBJECT_BUILDING));
-			if (obj != NULL) {
-				obj->repr = map[layer][row][col];
-				obj->pos1 = cursor->current;
-
-				selection->selected_object = obj;
-				selection->is_selected = true;
-			}
-		}
-		else {
-			if (selection->selected_object != NULL) {
-				free(selection->selected_object);
-			}
-			selection->selected_object = NULL;
-			selection->is_selected = false;
-		}
-
-		display_status(cursor, selection);
-		break;
-
-	case k_cancel:
-		if (selection->selected_object != NULL) {
-			free(selection->selected_object);
-			selection->selected_object = NULL;
-		}
-		selection->is_selected = false;
-		clear_status();
-		break;
-
-	default:
-		break;
-	}
-
-	display_status(cursor, selection);
-}
+//void display_status(const CURSOR* cursor, const SELECTION* selection) {
+//	printf("Cursor at (%d, %d)\n", cursor->current.row, cursor->current.column);
+//	if (selection->is_selected) {
+//		printf("Selected object at (%d, %d)\n", selection->selected_object->pos1.row, selection->selected_object->pos1.column);
+//	}
+//	else {
+//		printf("No object selected\n");
+//	}
+//}
+//
+//void clear_status(void) {
+//	printf("Status cleared\n");
+//}
 
 
-void set_cursor_position(int x, int y) {
-	COORD coord = { x, y };
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-}
-
-void display_status(const CURSOR* cursor, const SELECTION* selection) {
-	// 오른쪽 상단 위치(가령 x=70, y=0)를 설정
-	set_cursor_position(70, 0);
-
-	if (selection->is_selected) {
-		if (selection->selected_object) {
-			printf("Selected Object: %c   ", selection->selected_object->repr);
-		}
-		else {
-			printf("Selected Terrain: Desert    ");
-		}
-	}
-	else {
-		printf("No Object Selected          ");
-	}
-}
+//void display_status(const CURSOR* cursor, const SELECTION* selection) {
+//	// 오른쪽 상단 위치(가령 x=70, y=0)를 설정
+//	set_cursor_position(70, 0);
+//
+//	if (selection->is_selected) {
+//		if (selection->selected_object) {
+//			printf("Selected Object: %c   ", selection->selected_object->repr);
+//		}
+//		else {
+//			printf("Selected Terrain: Desert    ");
+//		}
+//	}
+//	else {
+//		printf("No Object Selected          ");
+//	}
+//}
 
 /* 상태창 초기화 */
-void clear_status(void) {
-	printf("Status Cleared\n");
-}
+//void clear_status(void) {
+//	printf("Status Cleared\n");
+//}
 
 /* ================= sample object movement =================== */
 POSITION sample_obj_next_position(void) {
