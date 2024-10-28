@@ -7,7 +7,7 @@
 
 void init(void);
 void intro(void);
-void Construction(void); 
+void Construction(void);
 void Biome(void);
 void outro(void);
 void cursor_move(DIRECTION dir);
@@ -269,30 +269,18 @@ void cursor_move(DIRECTION dir) {
 	POSITION curr = cursor.current;
 	POSITION new_pos = pmove(curr, dir);
 
-	// 현재 시간에서 연속 입력 여부를 확인
-	int time_diff = sys_clock - last_key_time;
-	int move_distance = (time_diff < DOUBLE_PRESS_INTERVAL) ? 3 : 1; // 연속 입력 시 2칸 이동
-
-	for (int i = 0; i < move_distance; i++) {
-		// validation check (맵의 유효한 영역 내에서만 이동)
-		if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 &&
-			1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
-
-			cursor.previous = cursor.current;
-			cursor.current = new_pos;
-			new_pos = pmove(new_pos, dir); // 다음 이동을 위한 위치 갱신
-		}
-		else {
-			break; // 맵 경계를 넘어가면 반복 종료
-		}
+	// validation check
+	if (new_pos.row >= 1 && new_pos.row < MAP_HEIGHT - 1 &&
+		new_pos.column >= 1 && new_pos.column < MAP_WIDTH - 1) {
+		// 커서가 유효한 범위 내에 있다면 이동
+		cursor.previous = cursor.current;
+		cursor.current = new_pos;
 	}
-	// 마지막 입력 시간을 현재 시간으로 업데이트
-	last_key_time = sys_clock;
 }
 
 /* ================= sample object movement =================== */
 POSITION sample_obj_next_position(void) {
-	// 현재 위치와 목적지를 비교해서 이동 방향 결정	
+	// 현재 위치와 목적지를 비교해서 이동 방향 결정    
 	POSITION diff = psub(obj.dest, obj.pos);
 	DIRECTION dir;
 
@@ -308,7 +296,7 @@ POSITION sample_obj_next_position(void) {
 			POSITION new_dest = { 1, 1 };
 			obj.dest = new_dest;
 		}
-		return obj.pos;
+		return obj.pos; // 현재 위치 반환
 	}
 
 	// 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
@@ -321,18 +309,17 @@ POSITION sample_obj_next_position(void) {
 
 	// validation check
 	// next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
-	// 지금은 충돌 시 아무것도 안 하는데, 나중에는 장애물을 피해가거나 적과 전투를 하거나... 등등
 	POSITION next_pos = pmove(obj.pos, dir);
-	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 && \
-		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 && \
+	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 &&
+		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 &&
 		map[1][next_pos.row][next_pos.column] < 0) {
+		return next_pos; // 유효한 다음 위치 반환
+	}
 
-		return next_pos;
-	}
-	else {
-		return obj.pos;  // 제자리
-	}
+	// 모든 경로에서 값을 반환해야 하므로, 기본적으로 현재 위치를 반환
+	return obj.pos; // 제자리 반환
 }
+
 
 void sample_obj_move(void) {
 	if (sys_clock <= obj.next_move_time) {

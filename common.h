@@ -56,8 +56,8 @@ typedef enum {
 // 편의성을 위한 함수들. KEY, POSITION, DIRECTION 구조체들을 유기적으로 변환
 
 // 편의성 함수
-inline POSITION padd(POSITION p1, POSITION p2) {
-	POSITION p = { p1.row + p2.row, p1.column + p2.column };
+inline POSITION padd(POSITION p1, POSITION sp2) {
+	POSITION p = { p1.row + sp2.row, p1.column + sp2.column };  // sp2로 수정
 	return p;
 }
 
