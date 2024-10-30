@@ -32,7 +32,7 @@ RESOURCE resource = {
 };
 
 OBJECT_SAMPLE obj = {
-	.pos = {1, 1},
+	.pos = {1, 1}, // 맵의 유효 범위 내에 있어야 함
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 2},
 	.repr = 'o',
 	.move_period = 300,
@@ -260,8 +260,8 @@ void init(void) {
 		}
 	}
 
-	// object sample
-	map[1][obj.pos.row][obj.pos.column] = 'o';
+	// object sample 초기 위치에 표시
+	map[1][obj.pos.row][obj.pos.column] = obj.repr; // 초기 위치 표시
 }
 
 // (가능하다면) 지정한 방향으로 커서 이동
@@ -280,44 +280,42 @@ void cursor_move(DIRECTION dir) {
 
 /* ================= sample object movement =================== */
 POSITION sample_obj_next_position(void) {
-	// 현재 위치와 목적지를 비교해서 이동 방향 결정    
-	POSITION diff = psub(obj.dest, obj.pos);
-	DIRECTION dir;
+    // 현재 위치와 목적지를 비교해서 이동 방향 결정    
+    POSITION diff = psub(obj.dest, obj.pos);
+    DIRECTION dir;
 
-	// 목적지 도착. 지금은 단순히 원래 자리로 왕복
-	if (diff.row == 0 && diff.column == 0) {
-		if (obj.dest.row == 1 && obj.dest.column == 1) {
-			// topleft --> bottomright로 목적지 설정
-			POSITION new_dest = { MAP_HEIGHT - 2, MAP_WIDTH - 2 };
-			obj.dest = new_dest;
-		}
-		else {
-			// bottomright --> topleft로 목적지 설정
-			POSITION new_dest = { 1, 1 };
-			obj.dest = new_dest;
-		}
-		return obj.pos; // 현재 위치 반환
-	}
+    // 목적지 도착. 지금은 단순히 원래 자리로 왕복
+    if (diff.row == 0 && diff.column == 0) {
+        if (obj.dest.row == 1 && obj.dest.column == 1) {
+            // topleft --> bottomright로 목적지 설정
+            POSITION new_dest = { MAP_HEIGHT - 2, MAP_WIDTH - 2 };
+            obj.dest = new_dest;
+        } else {
+            // bottomright --> topleft로 목적지 설정
+            POSITION new_dest = { 1, 1 };
+            obj.dest = new_dest;
+        }
+        return obj.pos; // 현재 위치 반환
+    }
 
-	// 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
-	if (abs(diff.row) >= abs(diff.column)) {
-		dir = (diff.row >= 0) ? d_down : d_up;
-	}
-	else {
-		dir = (diff.column >= 0) ? d_right : d_left;
-	}
+    // 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
+    if (abs(diff.row) >= abs(diff.column)) {
+        dir = (diff.row >= 0) ? d_down : d_up;
+    } else {
+        dir = (diff.column >= 0) ? d_right : d_left;
+    }
 
-	// validation check
-	// next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
-	POSITION next_pos = pmove(obj.pos, dir);
-	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 &&
-		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 &&
-		map[1][next_pos.row][next_pos.column] < 0) {
-		return next_pos; // 유효한 다음 위치 반환
-	}
-
-	// 모든 경로에서 값을 반환해야 하므로, 기본적으로 현재 위치를 반환
-	return obj.pos; // 제자리 반환
+    // validation check
+    // next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
+    POSITION next_pos = pmove(obj.pos, dir);
+    if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 && 
+        1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 && 
+        map[1][next_pos.row][next_pos.column] < 0) {
+        return next_pos; // 유효한 다음 위치 반환
+    }
+    
+    // 모든 경로에서 값을 반환해야 하므로, 기본적으로 현재 위치를 반환
+    return obj.pos; // 제자리 반환
 }
 
 
@@ -327,10 +325,10 @@ void sample_obj_move(void) {
 		return;
 	}
 
-	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장
-	map[1][obj.pos.row][obj.pos.column] = -1;
-	obj.pos = sample_obj_next_position();
-	map[1][obj.pos.row][obj.pos.column] = obj.repr;
+	// 이전 위치를 비운다
+	map[1][obj.pos.row][obj.pos.column] = -1; // 이전 위치 비우기
+	obj.pos = sample_obj_next_position(); // 새로운 위치 계산
+	map[1][obj.pos.row][obj.pos.column] = obj.repr; // 새로운 위치에 표시
 
-	obj.next_move_time = sys_clock + obj.move_period;
+	obj.next_move_time = sys_clock + obj.move_period; // 다음 이동 시간 설정
 }
