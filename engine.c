@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <time.h>
 #include <assert.h>
@@ -10,7 +11,11 @@ void intro(void);
 void Construction(void);
 void Biome(void);
 void outro(void);
-void cursor_move(DIRECTION dir);
+void cursor_move(DIRECTION direction);
+//void double_click_cursor_move(DIRECTION dir);
+//void handle_input(KEY key, CURSOR* cursor, SELECTION* selection);
+//void display_status(const CURSOR* cursor, const SELECTION* selection);
+//void clear_status(void);
 void sample_obj_move(void);
 POSITION sample_obj_next_position(void);
 
@@ -20,6 +25,7 @@ int sys_clock = 0;		// system-wide clock(ms)
 CURSOR cursor = { { 1, 1 }, {1, 1} };
 int last_key_time = 0;    // 마지막 키 입력 시간
 #define DOUBLE_PRESS_INTERVAL 200  // 연속 입력 시간 간격(ms)
+SELECTION selection;
 
 /* ================= game data =================== */
 char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -33,8 +39,10 @@ RESOURCE resource = {
 
 OBJECT_SAMPLE obj = {
 	.pos = {1, 1}, // 맵의 유효 범위 내에 있어야 함
+OBJECT_WORM obj = {
+	.pos = {3, 5},
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 2},
-	.repr = 'o',
+	.repr = 'W',
 	.move_period = 300,
 	.next_move_time = 300
 };
@@ -124,18 +132,25 @@ OBJECT_BUILDING ROCK_5 = {
 	.layer = 0
 };
 
+typedef struct {
+	OBJECT_BUILDING allay_base;       // 본진
+	OBJECT_BUILDING enemy_base; //적진
+	OBJECT_BUILDING allay_plate;
+	OBJECT_BUILDING enemy_plate;      // 장판
+	OBJECT_BUILDING dormitory;  // 숙소
+	OBJECT_BUILDING garage;     // 창고
+} COMMON_BUILDINGS;
 
 
 /* ================= main() =================== */
 int main(void) {
 	srand((unsigned int)time(NULL));
 
-	intro();
 	init();
-	Construction();
-	Biome();
-
+	intro();
 	display(resource, map, cursor);
+	Biome();
+	Construction();
 
 	while (1) {
 		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
@@ -143,7 +158,7 @@ int main(void) {
 
 		// 키 입력이 있으면 처리
 		if (is_arrow_key(key)) {
-			cursor_move(ktod(key));
+			cursor_move(&cursor, ktod(key));  // 수정된 부분
 		}
 		else {
 			// 방향키 외의 입력
@@ -177,6 +192,12 @@ void outro(void) {
 	exit(0);
 }
 
+
+//void double_click_cursor_move(DIRECTION dir) {
+//	for (int i = 0; i < 3; i++) {
+//		cursor_move(dir);
+//	}
+//}
 
 void Construction(void) {
 	// 아군 베이스
@@ -265,8 +286,8 @@ void init(void) {
 }
 
 // (가능하다면) 지정한 방향으로 커서 이동
-void cursor_move(DIRECTION dir) {
-	POSITION curr = cursor.current;
+void cursor_move(CURSOR* cursor, DIRECTION dir) {
+	POSITION curr = cursor->current;
 	POSITION new_pos = pmove(curr, dir);
 
 	// validation check
@@ -321,14 +342,14 @@ POSITION sample_obj_next_position(void) {
 
 void sample_obj_move(void) {
 	if (sys_clock <= obj.next_move_time) {
-		// 아직 시간이 안 됐음
+		// 아직 시간이 안 됐음w
 		return;
 	}
 
-	// 이전 위치를 비운다
-	map[1][obj.pos.row][obj.pos.column] = -1; // 이전 위치 비우기
-	obj.pos = sample_obj_next_position(); // 새로운 위치 계산
-	map[1][obj.pos.row][obj.pos.column] = obj.repr; // 새로운 위치에 표시
+	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장ddd
+	map[1][obj.pos.row][obj.pos.column] = -1;
+	obj.pos = sample_obj_next_position();
+	map[1][obj.pos.row][obj.pos.column] = obj.repr;
 
 	obj.next_move_time = sys_clock + obj.move_period; // 다음 이동 시간 설정
 }
