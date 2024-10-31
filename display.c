@@ -74,7 +74,9 @@ int get_color_at(POSITION pos) {
 	case 'R':
 		return COLOR_GRAY;
 	case '#':
-		return COLOR_BLACK_TEXT | COLOR_WHITE_BACKGROUND;
+		return COLOR_BLACK;
+	case 'o':
+		return COLOR_YELLOW;
 	default:
 		return COLOR_DEFAULT; // 기본 색상
 	}
@@ -82,53 +84,23 @@ int get_color_at(POSITION pos) {
 
 
 void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
-    project(map, backbuf); // 새로운 맵을 backbuf에 프로젝트합니다.
+	project(map, backbuf); // 새로운 맵을 backbuf에 프로젝트합니다.
 
-    for (int i = 0; i < MAP_HEIGHT; i++) {
-        for (int j = 0; j < MAP_WIDTH; j++) {
-            if (frontbuf[i][j] != backbuf[i][j]) { // 변경된 부분을 확인합니다.
-                POSITION pos = { i, j };
-                char current_char = backbuf[i][j];
+	for (int i = 0; i < MAP_HEIGHT; i++) {
+		for (int j = 0; j < MAP_WIDTH; j++) {
+			if (frontbuf[i][j] != backbuf[i][j]) { // 변경된 부분을 확인합니다.
+				POSITION pos = { i, j };
+				char current_char = backbuf[i][j];
 
-                // 특정 문자에 따른 색상 변경
-                if (current_char == 'B') {
-                    // 아군과 적군 베이스 색상 설정
-                    if (i >= 15 && j <= 2) { // 아군 베이스
-                        color = COLOR_BLUE;  // 파란색
-                    }
-                    else if (i <= 2 && j >= 57) { // 적군 베이스
-                        color = COLOR_RED;   // 빨간색
-                    }
-                }
-                else if (current_char == '5') {
-                    color = COLOR_ORANGE; // 스파이스 색상
-                }
-                else if (current_char == 'P') {
-                    color = COLOR_GRAY;   // 장판 색상
-                }
-                else if (current_char == 'R') {
-                    color = COLOR_ROCK;    // 바위 색상
-                }
+				// 초기값을 외부에서 설정
+				int color = get_color_at(pos); // 현재 문자의 색상을 가져옵니다.
 
-                // 선택한 색상으로 출력
-                printc(padd(map_pos, pos), current_char, color);
-            }
-
-            // frontbuf 업데이트
-            frontbuf[i][j] = backbuf[i][j];
-        }
-    }
-
-    printf("\033[0m"); // 색상 리셋
-                // 초기값을 외부에서 설정
-                int color = get_color_at(pos); // 현재 문자의 색상을 가져옵니다.
-
-                // 변경된 부분만 화면에 출력
-                printc(padd(map_pos, pos), current_char, color);
-                frontbuf[i][j] = backbuf[i][j]; // frontbuf 업데이트
-            }
-        }
-    }
+				// 변경된 부분만 화면에 출력
+				printc(padd(map_pos, pos), current_char, color);
+				frontbuf[i][j] = backbuf[i][j]; // frontbuf 업데이트
+			}
+		}
+	}
 }
 
 
@@ -139,21 +111,14 @@ void display_map(char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH]) {
 
 // frontbuf[][]에서 커서 위치의 문자를 색만 바꿔서 그대로 다시 출력
 void display_cursor(CURSOR cursor) {
-	POSITION prev = cursor.previous; // 이전 커서 위치
-	POSITION curr = cursor.current;   // 현재 커서 위치
+	POSITION prev = cursor.previous;
+	POSITION curr = cursor.current;
 
-	// 이전 커서 위치의 문자를 backbuf에서 가져옴
-	char prev_ch = backbuf[prev.row][prev.column];
-	int prev_color = get_color_at(prev); // 이전 위치의 색상을 가져옴
+	// 이전 위치를 '빈 공간'으로 설정
+	char prev_char = frontbuf[prev.row][prev.column];
+	printc(padd(map_pos, prev), ' ', COLOR_DEFAULT); // 빈 공간으로 업데이트
 
-	// 이전 위치의 문자를 원래 색상으로 복원하여 출력
-	printc(padd(map_pos, prev), prev_ch, prev_color);
-
-	// 현재 커서 위치의 문자를 backbuf에서 가져옴
-	char curr_ch = backbuf[curr.row][curr.column];
-	int curr_color = COLOR_CURSOR; // 커서 색상 (현재 위치의 배경색 유지)
-
-	// 현재 커서 위치의 문자를 출력
-	printc(padd(map_pos, curr), curr_ch, curr_color);
+	// 현재 위치에 커서 표시
+	char curr_char = frontbuf[curr.row][curr.column];
+	printc(padd(map_pos, curr), curr_char, COLOR_CURSOR);
 }
-

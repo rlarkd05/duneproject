@@ -1,6 +1,6 @@
-
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 #include <assert.h>
 #include "common.h"
 #include "io.h"
@@ -11,21 +11,22 @@ void intro(void);
 void Construction(void);
 void Biome(void);
 void outro(void);
-void cursor_move(DIRECTION direction);
-//void double_click_cursor_move(DIRECTION dir);
-//void handle_input(KEY key, CURSOR* cursor, SELECTION* selection);
-//void display_status(const CURSOR* cursor, const SELECTION* selection);
-//void clear_status(void);
+void cursor_move(DIRECTION dir);
+void cursor_double_move(DIRECTION dir, int times);
 void sample_obj_move(void);
+void cursor_select(void);
+void StatusWindow(void);
+void cursor_select(void);
+void system_message(void);
+void command_message(void);
 POSITION sample_obj_next_position(void);
 
 
 /* ================= control =================== */
-int sys_clock = 0;		// system-wide clock(ms)
+int sys_clock = 0;
 CURSOR cursor = { { 1, 1 }, {1, 1} };
-int last_key_time = 0;    // 마지막 키 입력 시간
-#define DOUBLE_PRESS_INTERVAL 200  // 연속 입력 시간 간격(ms)
-SELECTION selection;
+int last_key_time = 0;
+#define DOUBLE_PRESS_INTERVAL 200
 
 /* ================= game data =================== */
 char map[N_LAYER][MAP_HEIGHT][MAP_WIDTH] = { 0 };
@@ -38,12 +39,10 @@ RESOURCE resource = {
 };
 
 OBJECT_SAMPLE obj = {
-	.pos = {1, 1}, // 맵의 유효 범위 내에 있어야 함
-OBJECT_WORM obj = {
-	.pos = {3, 5},
+	.pos = {1, 1},
 	.dest = {MAP_HEIGHT - 2, MAP_WIDTH - 2},
-	.repr = 'W',
-	.move_period = 300,
+	.repr = 'o',
+	.speed = 300,
 	.next_move_time = 300
 };
 
@@ -132,25 +131,21 @@ OBJECT_BUILDING ROCK_5 = {
 	.layer = 0
 };
 
-typedef struct {
-	OBJECT_BUILDING allay_base;       // 본진
-	OBJECT_BUILDING enemy_base; //적진
-	OBJECT_BUILDING allay_plate;
-	OBJECT_BUILDING enemy_plate;      // 장판
-	OBJECT_BUILDING dormitory;  // 숙소
-	OBJECT_BUILDING garage;     // 창고
-} COMMON_BUILDINGS;
 
 
 /* ================= main() =================== */
 int main(void) {
 	srand((unsigned int)time(NULL));
 
-	init();
 	intro();
-	display(resource, map, cursor);
-	Biome();
+	init();
 	Construction();
+	Biome();
+	cursor_select();
+	StatusWindow();
+	system_message();
+	command_message();
+	display(resource, map, cursor);
 
 	while (1) {
 		// loop 돌 때마다(즉, TICK==10ms마다) 키 입력 확인
@@ -158,10 +153,10 @@ int main(void) {
 
 		// 키 입력이 있으면 처리
 		if (is_arrow_key(key)) {
-			cursor_move(&cursor, ktod(key));  // 수정된 부분
+			DIRECTION dir = ktod(key);
+			cursor_move(dir); // 기존 커서 이동 함수 호출
 		}
 		else {
-			// 방향키 외의 입력
 			switch (key) {
 			case k_quit: outro();
 			case k_none:
@@ -179,7 +174,6 @@ int main(void) {
 		sys_clock += 10;
 	}
 }
-
 /* ================= subfunctions =================== */
 void intro(void) {
 	printf("DUNE 1.5\n");
@@ -192,12 +186,11 @@ void outro(void) {
 	exit(0);
 }
 
-
-//void double_click_cursor_move(DIRECTION dir) {
-//	for (int i = 0; i < 3; i++) {
-//		cursor_move(dir);
-//	}
-//}
+void cursor_double_move(DIRECTION dir, int times) {
+	for (int i = 0; i < times; i++) {
+		cursor_move(dir);
+	}
+}
 
 void Construction(void) {
 	// 아군 베이스
@@ -281,75 +274,228 @@ void init(void) {
 		}
 	}
 
-	// object sample 초기 위치에 표시
-	map[1][obj.pos.row][obj.pos.column] = obj.repr; // 초기 위치 표시
+	// object sample
+	map[1][obj.pos.row][obj.pos.column] = 'o';
+
+}
+
+//상태창
+void StatusWindow() {
+	POSITION pos;
+
+	// 왼쪽 세로 테두리 출력
+	for (int row = 1; row < MAP_HEIGHT + 1; row++) {
+		pos.row = row;
+		pos.column = MAP_WIDTH + 2; // 맵 오른쪽에 상태창 위치 설정
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 상단 가로 테두리 출력
+	for (int col = MAP_WIDTH + 2; col < MAP_WIDTH + 60; col++) {
+		pos.row = 1;
+		pos.column = col;
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 하단 가로 테두리 출력
+	for (int col = MAP_WIDTH + 2; col < MAP_WIDTH + 60; col++) {
+		pos.row = MAP_HEIGHT;
+		pos.column = col;
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 오른쪽 세로 테두리 출력
+	for (int row = 1; row < MAP_HEIGHT + 1; row++) {
+		pos.row = row;
+		pos.column = MAP_WIDTH + 59; // 오른쪽 벽 위치
+		gotoxy(pos);
+		printf("#");
+	}
+}
+
+//시스템 메시지
+void system_message() {
+	// 메시지 창 높이와 시작 위치 설정
+	POSITION pos;
+	int message_start_row = MAP_HEIGHT + 2; // 시스템 메시지 창의 시작 행
+	int message_width = MAP_WIDTH - 1;          // 시스템 메시지 창 너비
+	int message_height = 5;                 // 시스템 메시지 창 높이
+
+	// 왼쪽 세로 테두리 출력
+	for (int row = message_start_row; row < message_start_row + message_height; row++) {
+		pos.row = row;
+		pos.column = 0; // 맨 왼쪽 테두리 위치
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 상단 가로 테두리 출력
+	for (int col = 0; col < message_width + 1; col++) {
+		pos.row = message_start_row;
+		pos.column = col;
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 하단 가로 테두리 출력
+	for (int col = 0; col < message_width + 1; col++) {
+		pos.row = message_start_row + message_height - 1;
+		pos.column = col;
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 오른쪽 세로 테두리 출력
+	for (int row = message_start_row; row < message_start_row + message_height; row++) {
+		pos.row = row;
+		pos.column = message_width;
+		gotoxy(pos);
+		printf("#");
+	}
+}
+
+//명령창
+void command_message() {
+	POSITION pos;
+	int command_start_row = MAP_HEIGHT + 2;  // 명령창의 시작 행 (상태창 바로 아래)
+	int command_width = 58;                 // 명령창 너비 (상태창 너비와 동일)
+	int command_height = 5;                 // 명령창 높이
+
+	// 왼쪽 세로 테두리 출력
+	for (int row = command_start_row; row < command_start_row + command_height; row++) {
+		pos.row = row;
+		pos.column = MAP_WIDTH + 2;         // 상태창 오른쪽과 일치하게 위치 설정
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 상단 가로 테두리 출력
+	for (int col = MAP_WIDTH + 2; col < MAP_WIDTH + 2 + command_width; col++) {
+		pos.row = command_start_row;
+		pos.column = col;
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 하단 가로 테두리 출력
+	for (int col = MAP_WIDTH + 2; col < MAP_WIDTH + 2 + command_width; col++) {
+		pos.row = command_start_row + command_height - 1;
+		pos.column = col;
+		gotoxy(pos);
+		printf("#");
+	}
+
+	// 오른쪽 세로 테두리 출력
+	for (int row = command_start_row; row < command_start_row + command_height; row++) {
+		pos.row = row;
+		pos.column = MAP_WIDTH + 2 + command_width - 1;
+		gotoxy(pos);
+		printf("#");
+	}
 }
 
 // (가능하다면) 지정한 방향으로 커서 이동
-void cursor_move(CURSOR* cursor, DIRECTION dir) {
-	POSITION curr = cursor->current;
+void cursor_move(DIRECTION dir) {
+	POSITION curr = cursor.current;
 	POSITION new_pos = pmove(curr, dir);
 
-	// validation check
-	if (new_pos.row >= 1 && new_pos.row < MAP_HEIGHT - 1 &&
-		new_pos.column >= 1 && new_pos.column < MAP_WIDTH - 1) {
-		// 커서가 유효한 범위 내에 있다면 이동
-		cursor.previous = cursor.current;
-		cursor.current = new_pos;
+	// 현재 시간에서 연속 입력 여부를 확인
+	int time_diff = sys_clock - last_key_time;
+	last_key_time = sys_clock; // Update last key time
+
+	// 연속 입력 시 이동 거리 결정
+	int move_distance = (time_diff < DOUBLE_PRESS_INTERVAL) ? 2 : 1; // 2칸 이동 또는 1칸 이동
+
+	for (int i = 0; i < move_distance; i++) {
+		// validation check (맵의 유효한 영역 내에서만 이동)
+		if (1 <= new_pos.row && new_pos.row <= MAP_HEIGHT - 2 &&
+			1 <= new_pos.column && new_pos.column <= MAP_WIDTH - 2) {
+
+			// 현재 위치를 이전 위치로 업데이트
+			cursor.previous = cursor.current; // Update previous position
+			cursor.current = new_pos; // Update current position
+
+			// 새로운 위치로 이동
+			new_pos = pmove(new_pos, dir); // Calculate new position
+		}
+		else {
+			break; // If new position is out of bounds, exit loop
+		}
 	}
 }
 
-/* ================= sample object movement =================== */
-POSITION sample_obj_next_position(void) {
-    // 현재 위치와 목적지를 비교해서 이동 방향 결정    
-    POSITION diff = psub(obj.dest, obj.pos);
-    DIRECTION dir;
+// 오브젝트 선택 기능
+void cursor_select(void) {
+	POSITION pos = cursor.current;
+	char obj_repr = map[1][pos.row][pos.column]; // 현재 위치의 오브젝트 표현
 
-    // 목적지 도착. 지금은 단순히 원래 자리로 왕복
-    if (diff.row == 0 && diff.column == 0) {
-        if (obj.dest.row == 1 && obj.dest.column == 1) {
-            // topleft --> bottomright로 목적지 설정
-            POSITION new_dest = { MAP_HEIGHT - 2, MAP_WIDTH - 2 };
-            obj.dest = new_dest;
-        } else {
-            // bottomright --> topleft로 목적지 설정
-            POSITION new_dest = { 1, 1 };
-            obj.dest = new_dest;
-        }
-        return obj.pos; // 현재 위치 반환
-    }
-
-    // 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
-    if (abs(diff.row) >= abs(diff.column)) {
-        dir = (diff.row >= 0) ? d_down : d_up;
-    } else {
-        dir = (diff.column >= 0) ? d_right : d_left;
-    }
-
-    // validation check
-    // next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
-    POSITION next_pos = pmove(obj.pos, dir);
-    if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 && 
-        1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 && 
-        map[1][next_pos.row][next_pos.column] < 0) {
-        return next_pos; // 유효한 다음 위치 반환
-    }
-    
-    // 모든 경로에서 값을 반환해야 하므로, 기본적으로 현재 위치를 반환
-    return obj.pos; // 제자리 반환
+	if (obj_repr != -1 && obj_repr != ' ') {
+		// 오브젝트가 있을 경우 상태 출력
+		printf("Selected Object: %c\n", obj_repr);
+		// 여기에 추가 상태 정보를 표시할 수 있음
+		// 예: 특정 오브젝트의 상태를 가져와 출력
+	}
+	else {
+		printf("Selected Terrain: Sand\n"); // 빈 지형 선택 시
+	}
 }
 
+POSITION sample_obj_next_position(void) {
+	// 현재 위치와 목적지를 비교해서 이동 방향 결정	
+	POSITION diff = psub(obj.dest, obj.pos);
+	DIRECTION dir;
+
+	// 목적지 도착. 지금은 단순히 원래 자리로 왕복
+	if (diff.row == 0 && diff.column == 0) {
+		if (obj.dest.row == 1 && obj.dest.column == 1) {
+			// topleft --> bottomright로 목적지 설정
+			POSITION new_dest = { MAP_HEIGHT - 2, MAP_WIDTH - 2 };
+			obj.dest = new_dest;
+		}
+		else {
+			// bottomright --> topleft로 목적지 설정
+			POSITION new_dest = { 1, 1 };
+			obj.dest = new_dest;
+		}
+		return obj.pos;
+	}
+
+	// 가로축, 세로축 거리를 비교해서 더 먼 쪽 축으로 이동
+	if (abs(diff.row) >= abs(diff.column)) {
+		dir = (diff.row >= 0) ? d_down : d_up;
+	}
+	else {
+		dir = (diff.column >= 0) ? d_right : d_left;
+	}
+
+	// validation check
+	// next_pos가 맵을 벗어나지 않고, (지금은 없지만)장애물에 부딪히지 않으면 다음 위치로 이동
+	// 지금은 충돌 시 아무것도 안 하는데, 나중에는 장애물을 피해가거나 적과 전투를 하거나... 등등
+	POSITION next_pos = pmove(obj.pos, dir);
+	if (1 <= next_pos.row && next_pos.row <= MAP_HEIGHT - 2 && \
+		1 <= next_pos.column && next_pos.column <= MAP_WIDTH - 2 && \
+		map[1][next_pos.row][next_pos.column] < 0) {
+
+		return next_pos;
+	}
+	else {
+		return obj.pos;  // 제자리
+	}
+}
 
 void sample_obj_move(void) {
 	if (sys_clock <= obj.next_move_time) {
-		// 아직 시간이 안 됐음w
+		// 아직 시간이 안 됐음
 		return;
 	}
 
-	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장ddd
+	// 오브젝트(건물, 유닛 등)은 layer1(map[1])에 저장
 	map[1][obj.pos.row][obj.pos.column] = -1;
 	obj.pos = sample_obj_next_position();
 	map[1][obj.pos.row][obj.pos.column] = obj.repr;
 
-	obj.next_move_time = sys_clock + obj.move_period; // 다음 이동 시간 설정
+	obj.next_move_time = sys_clock + obj.speed;
 }

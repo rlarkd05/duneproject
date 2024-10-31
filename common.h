@@ -1,3 +1,4 @@
+#pragma once
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
@@ -10,8 +11,9 @@
 /* ================= system parameters =================== */
 #define TICK 10		// time unit(ms)
 
+
 #define N_LAYER 2
-#define MAP_WIDTH	60
+#define MAP_WIDTH	60 //가로
 #define MAP_HEIGHT	18
 
 
@@ -25,8 +27,6 @@ typedef struct {
 typedef struct {
 	POSITION previous;  // 직전 위치
 	POSITION current;   // 현재 위치
-	int move_count;     // 빠른 이동(한번에 여러 칸)을 위한 변수
-	int last_move_time; // 마지막으로 이동한 시간
 } CURSOR;
 
 // 입력 가능한 키 종류.
@@ -53,12 +53,6 @@ typedef enum {
 	d_stay = 0, d_up, d_right, d_left, d_down
 } DIRECTION;
 
-// 오브젝트 상태 및 선택 처리
-typedef struct {
-	OBJECT_BUILDING* selected_object;  // 현재 선택된 오브젝트 (없으면 NULL)
-	bool is_selected;  // 오브젝트 선택 여부
-} SELECTION;
-
 
 /* ================= 위치와 방향(2) =================== */
 // 편의성을 위한 함수들. KEY, POSITION, DIRECTION 구조체들을 유기적으로 변환
@@ -74,8 +68,6 @@ inline POSITION psub(POSITION p1, POSITION p2) {
 	POSITION p = { p1.row - p2.row, p1.column - p2.column };
 	return p;
 }
-
-#define DOUBLE_PRESS_TIME 200 // 두 번 누르는 간격 (ms)
 
 // 방향키인지 확인하는 함수
 #define is_arrow_key(k)		(k_up <= (k) && (k) <= k_down)
@@ -103,11 +95,11 @@ typedef struct {
 
 // 대강 만들어 봤음. 기능 추가하면서 각자 수정할 것
 typedef struct {
-	POSITION pos;		// 현재 위치(position)
-	POSITION dest;		// 목적지(destination)
-	char repr;			// 화면에 표시할 s문자(representation)
-	int move_period;	// '몇 ms마다 한 칸 움직이는지'를 뜻함
-	int next_move_time;	// 다음에 움직일 시간
-} OBJECT_WORM;
+	POSITION pos;      // 현재 위치
+	POSITION dest;     // 목적지
+	char repr;         // 오브젝트의 표현 문자
+	int speed;         // 이동 속도
+	int next_move_time; // 다음 이동 시간
+} OBJECT_SAMPLE;
 
 #endif
